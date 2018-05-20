@@ -28,18 +28,18 @@
             </div>
             <div class="input_wrap">
               <span>借款人</span>
-              <input type="text" placeholder="请输入借款人姓名">
+              <input type="text" placeholder="请输入借款人姓名" v-model="addName">
             </div>
             <div class="input_wrap">
               <span>借条金额</span>
-              <input type="text" placeholder="单位：元">
+              <input type="text" placeholder="单位：元" v-model="addAmt">
             </div>
             <div class="text_wrap">
               <span>借条详情</span>
-              <textarea placeholder="在这里填写列条详情（比如利息等）"></textarea>
+              <textarea placeholder="在这里填写列条详情（比如利息等）" v-model="addDes"></textarea>
             </div>
             <div class="button_wrap">
-              <button>生成借条</button>
+              <button @click="addFun">生成借条</button>
             </div>
           </div>
           <div class="find">
@@ -49,25 +49,25 @@
             </div>
             <div class="input_wrap">
               <span>借条ID</span>
-              <input type="text" placeholder="请输入借条ID">
+              <input type="text" placeholder="请输入借条ID(测试：jhekunfk)" v-model="findId">
             </div>
             <div class="button_wrap white">
-              <button>查询借条</button>
+              <button @click="getFun">查询借条</button>
             </div>
-            <div class="find_result">
+            <div class="find_result" v-if="hasResult">
               <div class="find_title">查询结果：</div>
               <div class="find_result_content">
                 <div class="result_content_amt">
                   <span>借款金额</span>
-                  <span class="right amt_right">￥24000.00</span>
+                  <span class="right amt_right">￥{{nowAmt}}</span>
                 </div>
                 <div class="result_content_id">
                   <span>借款ID</span>
-                  <span class="right ">test</span>
+                  <span class="right ">{{nowId}}</span>
                 </div>
                 <div class="result_content_des">
                   <span>借款详情</span>
-                  <span class="right des_right">借款人xx巴拉巴拉巴拉借款人xx巴拉巴拉巴拉借款人xx巴拉巴拉巴拉借款人xx巴拉巴拉巴拉借款人xx巴拉巴拉巴拉借款人xx巴拉巴拉巴拉</span>
+                  <span class="right des_right">{{nowDes}}</span>
                 </div>
               </div>
             </div>
@@ -85,12 +85,52 @@ export default {
   name: 'app',
   data () {
     return {
-      
+      addName: '',
+      addAmt: '',
+      addDes: '',
+      findId: '',
+      nowAmt: '',
+      nowId: '',
+      nowDes: '',
+      hasResult: false
+    }
+  },
+  methods: {
+    addFun() {
+      if(this.addName == '' || this.addAmt == '' || this.addDes == '') {
+        alert('数据填写不完整')
+      } else {
+        let no = Number(Math.random().toString().substr(3,0) + Date.now()).toString(36)
+        let callArgs = '["' + no + '","' + this.addName + '","' + this.addDes + '","' + this.addAmt + '"]'
+        saveFun(callArgs,no);
+      }
+    },
+    getFun() {
+      if(this.findId == '') {
+        alert('数据填写不完整')
+      } else {
+        var from = Account.NewAccount().getAddressString(),
+          value = "0",
+          nonce = "0",
+          gas_price = "1000000",
+          gas_limit = "2000000",
+          callFunction = "get",
+          callArgs = "[\"" + this.findId + "\"]",
+          contract = {
+            "function": callFunction,
+            "args": callArgs
+          };
+        neb.api.call(from, dappAddress, value, nonce, gas_price, gas_limit, contract).then( (resp) => {
+          dealResult(resp, this)
+        }).catch( (err) => {
+          alert("error:" + err.message)
+        })
+      }
     }
   }
 }
 
-function saveFun(callArgs) {
+function saveFun(callArgs,no) {
   let to = dappAddress,
     value = "0",
     callFunction = "save";
@@ -100,7 +140,7 @@ function saveFun(callArgs) {
   });
 
   window.intervalQuery = setInterval(function () {
-    funcIntervalQuery();
+    funcIntervalQuery(no);
   }, 1500);
 }
 
@@ -108,12 +148,12 @@ function cbPush(resp) {
   console.log("response of push: " + JSON.stringify(resp))
 }
 
-function funcIntervalQuery() {
+function funcIntervalQuery(no) {
   nebPay.queryPayInfo(window.serialNumber)
     .then(function (resp) {
       var respObject = JSON.parse(resp)
       if (respObject.code === 0) {
-        alert('添加成功');
+        alert('添加成功,您的ID为'+ no);
         clearInterval(window.intervalQuery)
       }
     })
@@ -125,43 +165,11 @@ function funcIntervalQuery() {
 function dealResult(resp, _this) {
   let result = JSON.parse(resp.result)
 
-  _this.findFundTotal = result.fund_total
-  _this.findFundWhere = result.fund_where.split(',')
-  _this.findFundAtm = result.where_amt.split(',')
-  _this.findFundWhere[0] = '总金额'
-  _this.findFundAtm[0] = _this.findFundTotal
+  _this.nowId = result.no
+  _this.nowDes = result.des
+  _this.nowAmt = result.amt
 
-  _this.nowFundId = _this.findFundId
-
-  updateChart(_this)
   _this.hasResult = true
-}
-
-function initChart(_this) {
-  window.myChart = echarts.init(document.getElementById('resultEcharts'));
-}
-
-function updateChart(_this) {
-  var option = {
-    title: {
-      text: '善款' + _this.findFundId + '去向说明'
-    },
-    tooltip: {},
-    legend: {
-      data:['去向']
-    },
-    xAxis: {
-      data: _this.findFundWhere
-    },
-    yAxis: {},
-    series: [{
-      name: '去向',
-      type: 'bar',
-      data: _this.findFundAtm
-    }]
-  };
-
-  window.myChart.setOption(option);
 }
 
 </script>
@@ -353,6 +361,7 @@ main {
   clear: both;
 }
 .des_right {
+  text-align: right;
   display: inline-block;
   width: 250px;
 }
