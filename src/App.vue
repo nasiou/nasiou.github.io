@@ -62,8 +62,8 @@
                   <span class="right amt_right">￥{{nowAmt}}</span>
                 </div>
                 <div class="result_content_id">
-                  <span>借款ID</span>
-                  <span class="right ">{{nowId}}</span>
+                  <span>借款人</span>
+                  <span class="right ">{{nowName}}</span>
                 </div>
                 <div class="result_content_des">
                   <span>借款详情</span>
@@ -92,6 +92,7 @@ export default {
       nowAmt: '',
       nowId: '',
       nowDes: '',
+      nowName: '',
       hasResult: false
     }
   },
@@ -168,6 +169,7 @@ function dealResult(resp, _this) {
   _this.nowId = result.no
   _this.nowDes = result.des
   _this.nowAmt = result.amt
+  _this.nowName = result.name
 
   _this.hasResult = true
 }
