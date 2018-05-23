@@ -125,7 +125,7 @@ export default {
           dealResult(resp, this)
           callback()
         }).catch( (err) => {
-          alert("error:" + err.message)
+          console.log("error:" + err.message)
         })
       }
     }
