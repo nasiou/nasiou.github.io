@@ -103,10 +103,10 @@ export default {
       } else {
         let no = Number(Math.random().toString().substr(3,0) + Date.now()).toString(36)
         let callArgs = '["' + no + '","' + this.addName + '","' + this.addDes + '","' + this.addAmt + '"]'
-        saveFun(callArgs,no);
+        saveFun(callArgs,no,this);
       }
     },
-    getFun() {
+    getFun(callback) {
       if(this.findId == '') {
         alert('数据填写不完整')
       } else {
@@ -123,6 +123,7 @@ export default {
           };
         neb.api.call(from, dappAddress, value, nonce, gas_price, gas_limit, contract).then( (resp) => {
           dealResult(resp, this)
+          callback()
         }).catch( (err) => {
           alert("error:" + err.message)
         })
@@ -131,7 +132,7 @@ export default {
   }
 }
 
-function saveFun(callArgs,no) {
+function saveFun(callArgs,no,_this) {
   let to = dappAddress,
     value = "0",
     callFunction = "save";
@@ -141,15 +142,16 @@ function saveFun(callArgs,no) {
   });
 
   window.intervalQuery = setInterval(function () {
-    funcIntervalQuery(no);
-  }, 1500);
+    funcIntervalQuery(no,_this);
+  }, 15000);
 }
 
 function cbPush(resp) {
   console.log("response of push: " + JSON.stringify(resp))
 }
 
-function funcIntervalQuery(no) {
+function funcIntervalQuery(no,_this) {
+  /*
   nebPay.queryPayInfo(window.serialNumber)
     .then(function (resp) {
       var respObject = JSON.parse(resp)
@@ -160,7 +162,13 @@ function funcIntervalQuery(no) {
     })
     .catch(function (err) {
       console.log(err);
-    });
+    });*/
+  _this.findId = no
+  _this.getFun(() => {
+    alert('生成借条成功，id为' + no + '，请妥善保存')
+    clearInterval(window.intervalQuery)
+  })
+
 }
 
 function dealResult(resp, _this) {
