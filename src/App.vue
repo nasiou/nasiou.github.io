@@ -39,7 +39,10 @@
               <textarea placeholder="在这里填写列条详情（比如利息等）" v-model="addDes"></textarea>
             </div>
             <div class="button_wrap">
-              <button @click="addFun">生成借条</button>
+              <button @click="addFun">
+                <span v-if="isOnload">正在生成，请稍等...</span>
+                <span v-else>生成借条</span>
+              </button>
             </div>
           </div>
           <div class="find">
@@ -52,7 +55,7 @@
               <input type="text" placeholder="请输入借条ID(测试：jhekunfk)" v-model="findId">
             </div>
             <div class="button_wrap white">
-              <button @click="getFun">查询借条</button>
+              <button @click="getFun('get')">查询借条</button>
             </div>
             <div class="find_result" v-if="hasResult">
               <div class="find_title">查询结果：</div>
@@ -93,7 +96,8 @@ export default {
       nowId: '',
       nowDes: '',
       nowName: '',
-      hasResult: false
+      hasResult: false,
+      isOnload: false
     }
   },
   methods: {
@@ -103,10 +107,11 @@ export default {
       } else {
         let no = Number(Math.random().toString().substr(3,0) + Date.now()).toString(36)
         let callArgs = '["' + no + '","' + this.addName + '","' + this.addDes + '","' + this.addAmt + '"]'
+        this.isOnload = true
         saveFun(callArgs,no,this);
       }
     },
-    getFun(callback) {
+    getFun(no,callback) {
       if(this.findId == '') {
         alert('数据填写不完整')
       } else {
@@ -123,9 +128,14 @@ export default {
           };
         neb.api.call(from, dappAddress, value, nonce, gas_price, gas_limit, contract).then( (resp) => {
           dealResult(resp, this)
-          callback()
-        }).catch( (err) => {
-          console.log("error:" + err.message)
+          if(callback) {
+            callback()
+          }
+          if(no == 'get') {
+            if(resp.result == '' || resp.result == 'null' || resp.result == null) {
+              alert("error: id为'" + this.findId + "'的数据不存在，请检查是否填写错误，如果id填写正确，请稍等片刻查询")
+            }
+          }
         })
       }
     }
@@ -164,22 +174,26 @@ function funcIntervalQuery(no,_this) {
       console.log(err);
     });*/
   _this.findId = no
-  _this.getFun(() => {
-    alert('生成借条成功，id为' + no + '，请妥善保存')
+  _this.getFun(no,() => {
+    alert('生成借条成功，id为' + no + '，请妥善保存，如果查询不到，请稍等片刻再进行查询')
     clearInterval(window.intervalQuery)
+    _this.isOnload = false
   })
 
 }
 
 function dealResult(resp, _this) {
   let result = JSON.parse(resp.result)
+  if(result != null) {
+    _this.nowId = result.no
+    _this.nowDes = result.des
+    _this.nowAmt = result.amt
+    _this.nowName = result.name
 
-  _this.nowId = result.no
-  _this.nowDes = result.des
-  _this.nowAmt = result.amt
-  _this.nowName = result.name
-
-  _this.hasResult = true
+    _this.hasResult = true
+  } else {
+    _this.hasResult = false
+  }
 }
 
 </script>
